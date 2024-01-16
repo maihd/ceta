@@ -1,0 +1,103 @@
+;;;
+;;; File: socket.ceta
+;;; Author: MaiHD
+;;;
+
+(%define-alias kDirSize 8192)
+
+(%include #:lib "stdio.h"
+	  #:lib "stdlib.h"
+	  #:lib "string.h"
+	  #:lib "unistd.h"
+	  #:lib "sys/types.h"
+	  #:lib "sys/socket.h"
+	  #:lib "netinet/in.h"
+	  #:lib "arpa/inet.h")
+
+(typedef sockaddr-in-t (struct sockaddr-in))
+
+;; declare error function
+(declare (error void (msg (const char-ptr))))
+
+;; main entry function
+(define (main int (argc int) (argv (array char-ptr)))
+  (declare sockfd int)
+  (declare newsockfd int)
+  (declare portno int)
+  (declare clilen int)
+  (declare n int)
+  (declare buffer (array char 256))
+  
+  (declare seraddr sockaddr-in-t)
+  (declare cliaddr sockaddr-in-t)
+
+  ;; checking port provide from command line
+  (if
+    ((< argc 2)
+     (fprintf stderr "Error: no port provided.\n")
+     (exit 1)
+     (return 1))
+    (else
+     ;; set portno
+     (= portno (atoi (aref argv 1)))))
+
+  ;; create socket
+  (= sockfd
+     (socket AF-INET SOCK-STREAM 0))
+  (if ((< sockfd 0)
+       (error "Error: opening socking failed.")))
+  
+  (printf "Server ip: %s\n" (inet-addr "127.0.0.1"))
+  ;; fill buffer data with zero
+  (memset (ref seraddr) 0 (sizeof seraddr))
+  (= (:: seraddr sin-family)
+     AF-INET)
+  (= (:: seraddr sin-port)
+     (htons portno))
+  (= (:: seraddr sin-addr s-addr)
+     (inet-addr "127.0.0.1"))
+
+  ;; binding socket address info to socket 
+  (if ((< (bind sockfd
+		(as (ptr (struct sockaddr))
+		    (ref seraddr))
+		(sizeof seraddr))
+	  0)
+       (error "Error: binding failed.")))
+
+  ;; listen socket
+  (listen sockfd 5)
+
+  ;; accept client connection
+  (= clilen (sizeof cliaddr))
+  (= newsockfd (accept sockfd ;; NULL NULL))
+		       (as (ptr (struct sockaddr))
+		          (ref cliaddr))
+		       (ref clilen)))
+  (if ((< newsockfd 0)
+       (error "Error: accept failed.")))
+
+  ;; read receive message from client stream
+  (bzero buffer (sizeof buffer))
+  (= n (read newsockfd
+	     buffer
+	     (- (sizeof buffer) 1)))
+  (if ((< n 0)
+       (error "Error: reading from socket failed.")))
+  (printf "The message from client: %d\n" buffer)
+
+  ;; send message by write it to client stream
+  (= n (write newsockfd
+	      "I got your message"
+	      (sizeof "I got your message")))
+  (if ((< n 0)
+       (error "Error: writing to socket failed.")))
+  
+  ;(printf "Socket program sample using Ceta, by MaiHD.\n")
+  (getchar)
+  (return 0))
+
+;; error function
+(define (error void (msg (const char-ptr)))
+  (perror msg)
+  (exit 1))

@@ -1,0 +1,1 @@
+raco exe -o bin/ceta src/ceta.rkt

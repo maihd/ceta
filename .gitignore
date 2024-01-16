@@ -1,0 +1,6 @@
+*.vs
+*.exe
+*.bak
+
+/bin
+/src/compiled

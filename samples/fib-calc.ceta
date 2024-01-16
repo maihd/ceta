@@ -1,0 +1,30 @@
+;;;
+;;; Ceta language fibonacci calculator sample
+;;; File: fib-calc.ceta
+;;; Author: MaiHD
+;;;
+
+;; include standard io library
+(include #:clib "stdio.h")
+;; -> #include <stdio.h>
+
+;; declare fib function
+(declare (fib int (n int)))
+;; -> int fib(int n);
+
+;; define main entry function
+(define (main int)
+  ;; define variable
+  (define n int 0)
+  (printf "Fibonacci of: ")
+  (scanf "%d" (ref n))
+  (printf "Result: %d\n" (fib n))
+  (printf "Press any key to quit.")
+  (getchar)
+  (return 0))
+
+;; define fib function
+(defn fib (n : int) (b : int) -> int
+  (if ((< n 2) (return n))
+    (else (return (+ (fib (- n 1))
+		     (fib (- n 2)))))))

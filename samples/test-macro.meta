@@ -1,0 +1,13 @@
+;;;
+;;; File: test-macro.meta
+;;; Author: MaiHD
+;;;
+
+(include #:library "stdio.h")
+
+(define-macro (hello-world)
+  (printf "Hello world"))
+
+(define (main int)
+  (hello-world)
+  (return 0))

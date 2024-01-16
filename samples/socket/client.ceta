@@ -1,0 +1,126 @@
+;;;
+;;; file: client.ceta
+;;; author: MaiHD
+;;;
+
+(%include #:lib "stdio.h"
+	  #:lib "stdlib.h"
+	  #:lib "string.h"
+	  #:lib "unistd.h"
+	  #:lib "sys/types.h"
+	  #:lib "sys/socket.h"
+	  #:lib "netinet/in.h"
+	  #:lib "netdb.h"
+	  #:lib "arpa/inet.h")
+
+(define (error void (msg (const char-ptr)))
+  (perror msg)
+  (exit 1))
+
+;; main entry function
+(define (main int (argc int) (argv (array char-ptr)))
+  ;;
+  ;; variables declare
+  (declare portno int)
+  (declare hostname (const char-ptr))
+
+  ;;
+  ;; checking parameters
+  (if ((!= argc 3)
+       (fprintf stderr
+		"Usage: %s <hostname> <portno>\n"
+		(aref argv 0))
+       (return 1))
+      (else
+       (= portno (atoi (aref argv 2)))
+       (= hostname (aref argv 1))))
+
+  ;;
+  ;; variables declare
+  (declare sockfd int)
+  (declare status int)
+  (declare buffer (array char 256))
+  (declare hints (struct addrinfo))
+  (declare servinfo (ptr (struct addrinfo)))
+
+  ;;
+  ;; get host server
+  (memset (ref hints) 0 (sizeof hints))
+  (= (:: hints ai-family)
+     AF-INET)
+  (= (:: hints ai-socktype)
+     SOCK-STREAM)
+
+  (= status
+     (getaddrinfo hostname
+		  (aref argv 2)
+		  (ref hints)
+		  (ref servinfo)))
+  (if ((!= status 0)
+       (fprintf stderr
+		"getaddrinfo: %s\n"
+		(gai-strerror status))
+       (exit 1)))
+  
+  (declare p (ptr (struct addrinfo)))
+  (for ((= p servinfo))
+      ((= p (-> p ai-next)))
+      (!= p NULL)
+    ;; create socket
+    (= sockfd (socket AF-INET SOCK-STREAM 0))
+    (if ((< sockfd 0)
+	 (perror "Error: opening client socket failed.")
+	 (continue))) 
+    ;;
+    ;; connect to the server
+    (if ((< (connect sockfd
+		     (-> p ai-addr)
+		     (-> p ai-addrlen))
+	    0)
+	 (shutdown sockfd 2)
+	 (perror "Error: connection failed.")
+	 (continue)))
+    (break))
+  
+  (if ((== p NULL)
+       (fprintf stderr
+		"client: failed to connect\n")
+       (exit 1)))
+
+  (declare ip (array char INET6-ADDRSTRLEN))
+  (inet-ntop (-> p ai-family)
+	     (-> p ai-addr)
+	     ip
+	     (sizeof ip))
+  (printf "client: connection to %s\n" ip)
+  (freeaddrinfo servinfo)
+  
+  
+  (declare nbytes int)
+
+  ;;
+  ;; receive message from the server
+  (bzero buffer (sizeof buffer))
+  (= nbytes
+     (read sockfd buffer (sizeof buffer)))
+  (if ((< nbytes 0)
+       (error "Error: receive message failed.")))
+
+  (printf "Received: %s\n" buffer)
+  
+  
+  ;;
+  ;; prompt to get the message to send the server
+  (printf "Please enter the message: ")
+  (bzero buffer (sizeof buffer))
+  (fgets buffer (sizeof buffer) stdin)
+  
+  ;;
+  ;; send to the server
+  (= nbytes
+     (write sockfd buffer (strlen buffer)))
+  (if ((< nbytes 0)
+       (error "Error: sending message to server failed.")))
+  
+  (return 0))
+	  

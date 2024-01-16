@@ -1,0 +1,23 @@
+;;;
+;;; Ceta language hello world sample
+;;; File: hello-world.ceta
+;;; Author: MaiHD
+;;;
+
+;; include stdio.h lib files
+(include #:library "stdio.h")
+;; -> #include <stdio.h>
+
+;; main function entry
+(define (main int (argc int) (argv (array (ptr char))))
+  (printf "Hello world, from Ceta.\n")
+  (printf "Press any key to quit. ")
+  (getchar)
+  (return 0))
+;; ->
+;; int main(int argc, char * argv[]) {
+;; printf("Hello world, from Ceta.\n");
+;; printf("Press any key to quit. ");
+;; getchar();
+;; return 0;
+;; };
